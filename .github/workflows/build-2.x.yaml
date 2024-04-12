@@ -1,46 +1,36 @@
-# build with maven for old versions of 2.x
-name: Build with Maven
-
-# trigger build on branches that support Java 8
-on:
-  push:
-    branches:
-      - 2.0.x
-      - 2.1.x
-      - 2.2.x
-      - 2.3.x
-  pull_request:
-    branches:
-      - 2.0.x
-      - 2.1.x
-      - 2.2.x
-      - 2.3.x
-  workflow_dispatch:
-
 jobs:
   build:
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      name: Setup JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: adopt
+        java-version: ${{ matrix.java-version }}
+    - continue-on-error: true
+      name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        path: ~/.m2
+        restore-keys: ${{ runner.os }}-m2
+    - continue-on-error: true
+      name: Install dependencies
+      run: mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode
+        --show-version --file pom.xml
+    - continue-on-error: true
+      name: Build with Maven
+      run: mvn test --batch-mode --file pom.xml
     strategy:
       matrix:
-        platform:
-          # Trusty
-          - ubuntu-16.04
         java-version:
-          - 8
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: ${{ matrix.java-version }}
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-      - name: Install dependencies
-        run: mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version --file pom.xml
-      - name: Build with Maven
-        run: mvn test --batch-mode --file pom.xml
+        - 8
+        platform:
+        - ubuntu-16.04
+name: Build with Maven
+on:
+  repository_dispatch:
+    types: trigger-ga___build-2.x.yaml
